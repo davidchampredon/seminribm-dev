@@ -1,0 +1,65 @@
+---
+title: "seminribm package: SEmInR model, stochastic, individual-based."
+author: "David Champredon"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{seminribm}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+The `seminribm` package implements an epidemiological model of type SEIR (susceptible, exposed, infectious and recovered). The model is individual based and stochastic. The stochastic algorithm follows a standard Gillepsie implementation, with or without a tau-leap approximation.
+
+
+# Example
+Let's start by defining the model parameters:
+```{r, echo=TRUE,message=FALSE, warning=FALSE}
+
+horizon <- 300
+popSize <- 2e3
+
+initInfectious  <- 2
+R0              <- 3.0
+latent_mean     <- 2
+infectious_mean <- 4
+nE              <- 6
+nI              <- 6
+calc_WIW_Re     <- FALSE
+doExact         <- FALSE
+timeStepTauLeap <- 0.1
+rnd_seed        <- 1234
+```
+
+We can now run the model:
+
+```{r}
+res <- seminribm_run(horizon,
+                     popSize ,
+                     R0 ,
+                     latent_mean ,
+                     infectious_mean,
+                     nE ,
+                     nI ,
+                     initInfectious ,
+                     doExact ,
+                     timeStepTauLeap,
+                     rnd_seed ,
+                     calc_WIW_Re)
+```
+
+The time series can be plotted:
+```{r}
+plot(res$times, res$S, 
+     typ='l', las=1,
+     ylim=range(res$S,res$prev),
+     main = 'Epidemic Time Series',
+     xlab = 'time', ylab = 'n')
+grid()
+lines(res$times, res$prev, typ='l', col='red2')
+lines(res$times, res$R, typ='l', col='green3')
+```
+
+
+
+

@@ -1,0 +1,114 @@
+library('seminribm', lib.loc = './lib')
+library(tidyr)
+library(dplyr)
+library(ggplot2) ; theme_set(theme_bw())
+
+horizon <- 300
+popSize <- 5e3
+
+initInfectious  <- 2
+R0              <- 3.0
+latent_mean     <- 2
+infectious_mean <- 4
+nE              <- 6
+nI              <- 6
+calc_WIW_Re     <- FALSE
+doExact         <- FALSE
+timeStepTauLeap <- 0.1
+rnd_seed        <- 1234
+
+res <- seminribm_run(horizon,
+                     popSize ,
+                     R0 ,
+                     latent_mean ,
+                     infectious_mean,
+                     nE ,
+                     nI ,
+                     initInfectious ,
+                     doExact ,
+                     timeStepTauLeap,
+                     rnd_seed ,
+                     calc_WIW_Re)
+
+plot(res$times, res$S, 
+     typ='l', las=1,
+     ylim=range(res$S,res$prev),
+     main = 'Epidemic Time Series',
+     xlab = 'time', ylab = 'n')
+grid()
+lines(res$times, res$prev, typ='l', col='red2')
+lines(res$times, res$R, typ='l', col='green3')
+
+# Backward GI:
+
+b <- res$GI_bck
+at <- res$acq_times
+    
+df.b <- data.frame(at,b) %>%
+    mutate(rt = round(at))
+
+df.b %>%
+    group_by(rt) %>%
+    summarise(b_mean = mean(b)) %>%
+    ggplot(aes(x=rt,y=b_mean)) + 
+    geom_point(data = df.b, 
+               aes(x=at,y=b), 
+               alpha=0.15, colour="orange",
+               pch=16,size=4) +
+    geom_abline(slope = 1, intercept = 0, linetype=2, colour = "grey")+
+    geom_line(size=1.5) + 
+    geom_point(size=2) +
+    ggtitle('Backward Generation Intervals (line:daily mean)')+
+    xlab('calendar time')+ylab('days')
+    
+# Unpacking forward GIs 
+# and link to acquisition date:
+f <- res$GI_fwd
+tat <- res$acqTransm_t
+
+tat2 <- vector()
+gifwd <- vector()
+k <- 1
+for(i in 1:length(f)){
+    for(j in 1:length(f[[i]])){
+        tat2[k] <- tat[i]
+        gifwd[k] <- f[[i]][j]
+        k <- k+1
+    }
+}
+df.f <- data.frame(at=tat2, rt=round(tat2), f=gifwd)
+
+df.f2 <- df.f %>%
+    group_by(rt) %>%
+    summarise(f_mean = mean(f))
+
+ggplot(df.f) + 
+    geom_point(aes(x=rt,y=f), alpha=0.1, size=4, pch=16, colour="blue") +
+    geom_line(data=df.f2, aes(x=rt, y=f_mean), size=2)+
+    ggtitle('Forward Generation Intervals (line:daily mean)')+
+    xlab('calendar time')+ylab('days')
+
+
+# Secondary cases:
+
+df.R <- data.frame(ta = res$Reff[[1]], 
+                   tar = round(res$Reff[[1]]),
+                   sc = res$Reff[[2]])
+
+df.R %>% 
+    group_by(tar) %>%
+    summarize(sc_mean = mean(sc)) %>%
+    ggplot(aes(x=tar,y=sc_mean)) + 
+    geom_hline(yintercept = R0, linetype=2) +
+    geom_point(data=df.R, aes(x=ta, y=sc), 
+               alpha=0.2, pch=16,size=3, colour="red")+
+    geom_line(size=2) +
+    ggtitle('Secondary cases')+
+    xlab('time infector disease acquisition')+ylab('num. secondary transmissions')
+
+ggplot(df.R) + 
+    geom_histogram(aes(x=sc), binwidth = 1) +
+    scale_x_continuous(breaks=0:(max(df.R$sc+1))) +
+    ggtitle('Secondary cases')+
+    xlab('num. secondary transmissions')
+
