@@ -1,5 +1,5 @@
 # seminribm-dev
-Development for seminribm
+Development for the R package `seminribm`.
 
 Run `build_library.sh` to build and install (locally) the `seminribm` package.
 
