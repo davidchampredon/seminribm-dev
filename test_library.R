@@ -47,6 +47,11 @@ at <- res$acq_times
 df.b <- data.frame(at,b) %>%
     mutate(rt = round(at))
 
+# save data to add into the package
+sim_gi <- df.b
+save(sim_gi, file = './data/sim_gi.RData')
+# - - 
+
 df.b %>%
     group_by(rt) %>%
     summarise(b_mean = mean(b)) %>%

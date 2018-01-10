@@ -11,3 +11,6 @@ cp seminribm/src/* ../seminribm/src
 cp seminribm/man/* ../seminribm/man
 cp vignettes/*.Rmd ../seminribm/vignettes
 
+### Data added to the package:
+cp data/*.RData ../seminribm/data
+cp data/data.R ../seminribm/R
